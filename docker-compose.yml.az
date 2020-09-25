@@ -1,0 +1,41 @@
+---
+version: '3.5'
+services:
+  wetty:
+    image: wettyoss/wetty
+    container_name: wetty
+    tty: true
+    working_dir: /usr/src/app
+    ports:
+      - '3000:3000'
+    environment:
+      SSHHOST: 'wetty-ssh'
+      SSHPORT: 22
+      NODE_ENV: 'development'
+
+  web:
+    image: nginx
+    container_name: wetty-nginx
+    volumes:
+      - u120903:/u120903
+      - ${WEBAPP_STORAGE_HOME}/$AZUREBLOBSTORAGE_u120903/nginx.template:/etc/nginx/conf.d/wetty.template
+    ports:
+      - '80:80'
+    environment:
+      - NGINX_DOMAIN=wetty.com
+      - NGINX_PORT=80
+      - WETTY_HOST=wetty
+      - WETTY_PORT=3000
+    command: >-
+      /bin/bash -c "envsubst
+      '$${NGINX_DOMAIN},$${NGINX_PORT},$${WETTY_HOST},$${WETTY_PORT}' <
+      /etc/nginx/conf.d/wetty.template > /etc/nginx/conf.d/default.conf && nginx
+      -g 'daemon off;'"
+
+  wetty-ssh:
+    image: wettyoss/wetty:ssh
+    container_name: 'wetty-ssh'
+
+networks:
+  default:
+    name: wetty
